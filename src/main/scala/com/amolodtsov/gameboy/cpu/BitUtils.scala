@@ -1,8 +1,8 @@
-package main.scala
+package com.amolodtsov.gameboy.cpu
 
 object BitUtils {
 
-  import com.google.common.base.Preconditions.checkArgument;
+  import com.google.common.base.Preconditions.checkArgument
 
   def getMSB(word: Int): Int = {
     checkWordArgument("word", word)
