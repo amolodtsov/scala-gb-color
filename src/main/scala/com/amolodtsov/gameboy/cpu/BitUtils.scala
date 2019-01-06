@@ -14,6 +14,10 @@ object BitUtils {
     word & 0xff
   }
 
+  def toWord(bytes: Array[Int]): Int = {
+    toWord(bytes(1), bytes(0))
+  }
+
   def toWord(msb: Int, lsb: Int): Int = {
     checkByteArgument("msb", msb)
     checkByteArgument("lsb", lsb)
@@ -34,12 +38,26 @@ object BitUtils {
 
   def setBit(byteValue: Int, position: Int): Int = {
     checkByteArgument("byteValue", byteValue)
-    byteValue | (1 << position)
+    (byteValue | (1 << position)) | 0xff
   }
 
   def clearBit(byteValue: Int, position: Int): Int = {
     checkByteArgument("byteValue", byteValue)
     ~(1 << position) & byteValue & 0xff
+  }
+
+  def isNegative(signedByteValue: Int): Boolean = {
+    checkByteArgument("byteValue", signedByteValue)
+    (signedByteValue & (1 << 7)) != 0
+  }
+
+  def abs(signedByteValue: Int): Int = {
+    checkByteArgument("signedByteValue", signedByteValue)
+    if (isNegative(signedByteValue)) {
+      0x100 - signedByteValue
+    } else {
+      signedByteValue
+    }
   }
 
   def checkByteArgument(argumentName: String, argumen: Int): Unit = {

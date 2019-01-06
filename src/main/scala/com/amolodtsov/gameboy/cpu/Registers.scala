@@ -10,6 +10,8 @@ class Registers {
 
   private val flags: Flags = new Flags()
 
+  private var ime:Boolean = true
+
   def getA(): Int = a
 
   def getB(): Int = b
@@ -34,9 +36,13 @@ class Registers {
 
   def getHL(): Int = h << 8 | l
 
-  def getSp(): Int = sp
+  def getSP(): Int = sp
 
-  def getPc(): Int = pc
+  def getPC(): Int = pc
+
+  def getFlags():Flags = flags
+
+  def isIME():Boolean = ime
 
   def setA(a: Int): Unit = {
     checkByteArgument("a", a)
@@ -102,14 +108,48 @@ class Registers {
     l = getLSB(hl)
   }
 
-  def setSp(sp: Int): Unit = {
+  def setSP(sp: Int): Unit = {
     checkWordArgument("sp", sp)
     this.sp = sp
   }
 
-  def setPc(pc: Int): Unit = {
+  def setPC(pc: Int): Unit = {
     checkWordArgument("pc", pc)
     this.pc = pc
   }
 
+  def setIME(ime:Boolean):Unit = {
+    this.ime =ime
+  }
+
+  def decrementHL():Int = {
+    val oldHL:Int = getHL()
+    setHL((oldHL - 1) % 0xffff)
+    oldHL
+  }
+
+  def incrementHL():Int = {
+    val oldHL:Int = getHL()
+    setHL((oldHL + 1) % 0xffff)
+    oldHL
+  }
+
+  def decrementSP():Unit = {
+    sp = (sp -1 ) % 0xffff
+  }
+
+  def incrementSP():Unit = {
+    sp = (sp + 1) % 0xffff
+  }
+
+  def addToPC(signedByte:Int):Unit = {
+    checkByteArgument("signedByte", signedByte)
+    if(isNegative(signedByte)) {
+      pc = (pc -abs(signedByte) ) & 0xffff
+    } else {
+      pc = (pc + abs(signedByte)) & 0xffff
+    }
+  }
+
+//  override def toString: String = String.format("AF=%04x, BC=%04x, DE=%04x, HL=%04x, SP=%04x, PC=%04x, %s", getAF(), getBC(), getDE(), getHL(), getSP(), getPC(), getFlags().toString)
 }

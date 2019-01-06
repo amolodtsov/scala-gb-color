@@ -2,22 +2,98 @@ package com.amolodtsov.gameboy.cpu
 
 import com.amolodtsov.gameboy.AddressSpace
 import com.amolodtsov.gameboy.cpu.Command.Operation
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable.MutableList
+import jdk.nashorn.internal.objects.NativeArray.push
 
 class Cpu(addressSpace: AddressSpace) {
 
+  val log: Logger = LoggerFactory.getLogger(this.getClass)
+
   val registers: Registers = new Registers()
 
-  private val commands:MutableList[Command] = new MutableList[Command]()
-  regCmd(commands, 0x06, 8 , 1, "LD B, {}", (r, m, a) => r.setB(a(0)))
-  regCmd(commands, 0x0e, 8 , 1, "LD C, {}", (r, m, a) => r.setC(a(0)))
-  regCmd(commands, 0x16, 8 , 1, "LD D, {}", (r, m, a) => r.setD(a(0)))
-  regCmd(commands, 0x1e, 8 , 1, "LD E, {}", (r, m, a) => r.setE(a(0)))
-  regCmd(commands, 0x26, 8 , 1, "LD H, {}", (r, m, a) => r.setH(a(0)))
-  regCmd(commands, 0x2e, 8 , 1, "LD L, {}", (r, m, a) => r.setL(a(0)))
+  def runCommand(): Int = {
+    handleInterrupt()
 
-  private def regCmd(commands: MutableList[Command], opcode: Int, cycles: Int, argsLength: Int, label: String, operation: Operation): Unit = {
-    commands(opcode) = new Command(opcode, cycles, argsLength, label, operation)
+    var pc:Int = registers.getPC()
+    pc = pc+1
+    var opcode:Int = addressSpace.getByte(pc)
+    var cmd:Command = null
+    if(opcode == 0xcb) {
+      pc = pc +1
+      opcode = addressSpace.getByte(pc)
+      cmd = Opcodes.EXT_COMMANDS.get(opcode).get
+    } else {
+      cmd = Opcodes.COMMANDS.get(opcode).get
+    }
+
+    if (cmd == null) {
+      log.warn("Invalid instruction %02x @ %04x", opcode, registers.getPC())
+      0
+    } else {
+      val args:Array[Int] = new Array[Int](cmd.getArgsLength())
+      for(i <- 0 to args.length) {
+        pc = pc +1
+        args(i) = addressSpace.getByte(pc)
+      }
+
+      if (log.isTraceEnabled) {
+//        log.trace("%04x: %8s\t%s", registers.getPC(), getDump(registers.getPC(), pc), cmd.getLabel())
+      }
+
+      registers.setPC(pc)
+      cmd.getOperation().run(registers, addressSpace, args)
+
+      if(log.isTraceEnabled) {
+        log.trace("Registers: {}", registers)
+      }
+
+      cmd.getCycles()
+    }
+  }
+
+  def handleInterrupt(): Boolean = {
+    if (!registers.isIME()) {
+      false
+    } else {
+      val interruptFlug: Int = addressSpace.getByte(0xff0f)
+      val interruptEnable: Int = addressSpace.getByte(0xffff)
+
+      var handler: Int = 0
+      if ((interruptEnable & interruptFlug & (1 << 0)) != 0) {
+        handler = 0x0040 // V-Blank
+      }
+      if ((interruptEnable & interruptFlug & (1 << 1)) != 0) {
+        handler = 0x0048 // LCDC Status
+      }
+      if ((interruptEnable & interruptFlug & (1 << 2)) != 0) {
+        handler = 0x0050 // Timer Overflow
+      }
+      if ((interruptEnable & interruptFlug & (1 << 3)) != 0) {
+        handler = 0x0058 // Serial Transfer
+      }
+      if ((interruptEnable & interruptFlug & (1 << 4)) != 0) {
+        handler = 0x0060 // Hi-Lo of P10-P13
+      }
+
+      if (handler > 0) {
+        registers.setIME(false)
+        addressSpace.setByte(0xff0f, 0)
+        push(registers.getPC())
+        registers.setPC(handler)
+        true
+      } else {
+        false
+      }
+    }
+  }
+
+  private def getDump(from:Int, to:Int):String = {
+    val builder:StringBuilder = new StringBuilder()
+//    for (i <- from to to ) {
+//      builder.append(String.format("%02x", addressSpace.getByte(i) & 0xff))
+//    }
+    builder.toString()
   }
 }

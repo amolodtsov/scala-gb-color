@@ -27,13 +27,13 @@ class Flags {
 
   def isC(): Boolean = getBit(flags, C_POS)
 
-  def setZ(): Unit = setBit(flags, Z_POS)
+  def setZ(z: Boolean): Unit = setBit(flags, Z_POS, z)
 
-  def setN(): Unit = setBit(flags, N_POS)
+  def setN(n: Boolean): Unit = setBit(flags, N_POS, n)
 
-  def setH(): Unit = setBit(flags, H_POS)
+  def setH(h: Boolean): Unit = setBit(flags, H_POS, h)
 
-  def setC(): Unit = setBit(flags, C_POS)
+  def setC(c: Boolean): Unit = setBit(flags, C_POS, c)
 
   def clearZ(): Unit = clearBit(flags, Z_POS)
 
@@ -43,4 +43,30 @@ class Flags {
 
   def clearC(): Unit = clearBit(flags, C_POS)
 
+  override def toString: String = {
+    val result: StringBuilder = new StringBuilder()
+    result
+      .append(if (isZ()) {
+        'Z'
+      } else {
+        '-'
+      })
+      .append(if (isN()) {
+        'N'
+      } else {
+        '-'
+      })
+      .append(if (isH()) {
+        'H'
+      } else {
+        '-'
+      })
+      .append(if (isC()) {
+        'C'
+      } else {
+        '-'
+      })
+      .append("----");
+    result.toString()
+  }
 }
