@@ -1,10 +1,8 @@
 package com.amolodtsov.gameboy.cpu
 
 import com.amolodtsov.gameboy.AddressSpace
-import com.amolodtsov.gameboy.cpu.Command.Operation
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.collection.mutable.MutableList
 import jdk.nashorn.internal.objects.NativeArray.push
 
 class Cpu(addressSpace: AddressSpace) {
@@ -16,36 +14,36 @@ class Cpu(addressSpace: AddressSpace) {
   def runCommand(): Int = {
     handleInterrupt()
 
-    var pc:Int = registers.getPC()
-    pc = pc+1
-    var opcode:Int = addressSpace.getByte(pc)
-    var cmd:Command = null
-    if(opcode == 0xcb) {
-      pc = pc +1
+    var pc: Int = registers.getPC()
+    var opcode: Int = addressSpace.getByte(pc)
+    pc = pc + 1
+    var cmd: Command = null
+    if (opcode == 0xcb) {
       opcode = addressSpace.getByte(pc)
-      cmd = Opcodes.EXT_COMMANDS.get(opcode).get
+      pc = pc + 1
+      cmd = Opcodes.EXT_COMMANDS(opcode)
     } else {
-      cmd = Opcodes.COMMANDS.get(opcode).get
+      cmd = Opcodes.COMMANDS(opcode)
     }
 
     if (cmd == null) {
       log.warn("Invalid instruction %02x @ %04x", opcode, registers.getPC())
       0
     } else {
-      val args:Array[Int] = new Array[Int](cmd.getArgsLength())
-      for(i <- 0 to args.length) {
-        pc = pc +1
+      val args: Array[Int] = new Array[Int](cmd.getArgsLength())
+      for (i <- args.indices) {
         args(i) = addressSpace.getByte(pc)
+        pc = pc + 1
       }
 
       if (log.isTraceEnabled) {
-//        log.trace("%04x: %8s\t%s", registers.getPC(), getDump(registers.getPC(), pc), cmd.getLabel())
+        //        log.trace("%04x: %8s\t%s", registers.getPC(), getDump(registers.getPC(), pc), cmd.getLabel())
       }
 
       registers.setPC(pc)
       cmd.getOperation().run(registers, addressSpace, args)
 
-      if(log.isTraceEnabled) {
+      if (log.isTraceEnabled) {
         log.trace("Registers: {}", registers)
       }
 
@@ -89,11 +87,11 @@ class Cpu(addressSpace: AddressSpace) {
     }
   }
 
-  private def getDump(from:Int, to:Int):String = {
-    val builder:StringBuilder = new StringBuilder()
-//    for (i <- from to to ) {
-//      builder.append(String.format("%02x", addressSpace.getByte(i) & 0xff))
-//    }
+  private def getDump(from: Int, to: Int): String = {
+    val builder: StringBuilder = new StringBuilder()
+    //    for (i <- from to to ) {
+    //      builder.append(String.format("%02x", addressSpace.getByte(i) & 0xff))
+    //    }
     builder.toString()
   }
 }
